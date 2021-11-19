@@ -5,34 +5,39 @@
 //You have to create your own file
 //and write your own creds there
 #include "wifi-details.h"
+
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #define WIFI_AP_SSID "esp32-lights"
 char apSsid[64] = {0};
+char mDNSName[64] = {0};
 
 int i = 0;
-
-bool tryConnectWifi(int);
-bool createAP();
 
 void setup() {
   Serial.begin(115200);
   Serial.println("booting...");
   
   initScreen();
-  drawString(0, 0, "display: OK");
+  fillString(0, "display: OK");
   
   initLeds();
-  drawString(0, 8, "leds: OK");
+  fillString(1, "leds: OK");
 
-  drawString(0, 16, "wifi: connecting");
+  fillString(2, "wifi: connecting");
   if (tryConnectWifi(15000)) {
-    fillString(0, 16, WIFI_SSID);
-    drawString(0, 24, WiFi.localIP().toString());
+    fillString(0, WIFI_SSID);
+    fillString(1, WiFi.localIP().toString());
   } else {
-    fillString(0, 16, "wifi: configuring AP");
+    fillString(2, "wifi: configuring AP");
     createAP();
-    fillString(0, 16, apSsid);
-    drawString(0, 24, WiFi.softAPIP().toString());
+    fillString(0, apSsid);
+    fillString(1, WiFi.softAPIP().toString());
+  }
+  if (mDNS()) {
+    fillString(2, mDNSName);
+  } else {
+    fillString(2, "mDNS n/a");
   }
 
   setPixelColor(0, 0, 0, 0);
@@ -73,11 +78,16 @@ bool tryConnectWifi(int timeoutMs) {
   return true;
 }
 
-bool createAP() {
+uint32_t getChipId() {
   uint32_t chipId = 0;
   for(int i=0; i<17; i=i+8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
+  return chipId;
+}
+
+bool createAP() {
+  uint32_t chipId = getChipId();
   sprintf(apSsid, "%s-%u", WIFI_AP_SSID, chipId);
   Serial.println("trying ap:");
   Serial.println(apSsid);
@@ -88,4 +98,10 @@ bool createAP() {
   WiFi.softAP((const char*)apSsid, (const char*)apSsid);
   Serial.println("wifi ap ok");
   return true;
+}
+
+bool mDNS() {
+  uint32_t chipId = getChipId();
+  sprintf(mDNSName, "esp32-%u", chipId);
+  return MDNS.begin((const char*)mDNSName);
 }
