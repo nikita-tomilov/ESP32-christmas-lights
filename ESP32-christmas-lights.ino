@@ -12,7 +12,11 @@
 char apSsid[64] = {0};
 char mDNSName[64] = {0};
 
-int i = 0;
+#include <WebServer.h>
+WebServer server(80);
+#include <uri/UriBraces.h>
+#include <uri/UriRegex.h>
+
 
 void setup() {
   Serial.begin(115200);
@@ -42,16 +46,16 @@ void setup() {
 
   setPixelColor(0, 0, 0, 0);
   drawLeds();
+
+  fillString(3, "starting server...");
+  setupServer();
   delay(30000);
 }
 
 void loop() {
-  char str[12];
-  sprintf(str, "%d", i);
-  clearScreen();
-  drawString(i, i, str);
-  delay(1000);
-  i++;
+  fillString(4, "r e a d y");
+  server.handleClient();
+  delay(2);
 }
 
 bool tryConnectWifi(int timeoutMs) {
@@ -104,4 +108,33 @@ bool mDNS() {
   uint32_t chipId = getChipId();
   sprintf(mDNSName, "esp32-%u", chipId);
   return MDNS.begin((const char*)mDNSName);
+}
+
+void setupServer() {
+   server.on(F("/"), []() {
+    server.send(200, "text/plain", "hello from esp32!");
+  });
+
+  server.on(UriBraces("/users/{}"), []() {
+    String user = server.pathArg(0);
+    server.send(200, "text/plain", "User: '" + user + "'");
+  });
+
+  server.on(UriBraces("/color/{}/{}/{}"), []() {
+    String rS = server.pathArg(0);
+    String gS = server.pathArg(1);
+    String bS = server.pathArg(2);
+    server.send(200, "text/plain", "RGB: " + rS + " " + gS + " " + bS);
+  });
+  
+  server.on(UriRegex("^\\/users\\/([0-9]+)\\/devices\\/([0-9]+)$"), []() {
+    String user = server.pathArg(0);
+    String device = server.pathArg(1);
+    server.send(200, "text/plain", "User: '" + user + "' and Device: '" + device + "'");
+  });
+  /*server.onNotFound([]() {
+  if (!handleFileRead(server.uri()))
+    server.send(404, "text/plain", "404: Not Found");
+  });*/
+  server.begin();
 }
