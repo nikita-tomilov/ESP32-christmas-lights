@@ -1,6 +1,8 @@
 #ifndef _LEDS_HPP
 #define _LEDS_HPP
 
+//make sure to use 1.7 or higher on ESP32
+//see https://github.com/adafruit/Adafruit_NeoPixel/issues/139
 #include <Adafruit_NeoPixel.h>
 
 #define PIN 27

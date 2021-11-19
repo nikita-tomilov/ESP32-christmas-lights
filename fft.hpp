@@ -9,8 +9,9 @@ arduinoFFT FFT = arduinoFFT();
 
 #define SAMPLES 1024             // Must be a power of 2
 #define SAMPLING_FREQUENCY 40000 // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
-#define AMPLITUDE 150
+#define AMPLITUDE 300
 #define NOIZE_THRESHOLD ((AMPLITUDE * 10))
+#define DECREMENT_SPEED 3
 
 unsigned int sampling_period_us;
 unsigned long microseconds;
@@ -20,7 +21,7 @@ double vImag[SAMPLES];
 unsigned long newTime, oldTime;
 int dominant_value;
 
-int bands[8] = {0};
+volatile int bands[8] = {0};
 
 void initFFT() {
   sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY));
@@ -29,7 +30,8 @@ void initFFT() {
 void captureAudioData() {
   for (int i = 0; i < SAMPLES; i++) {
     newTime = micros();
-    vReal[i] = analogRead(4); // Using Arduino ADC nomenclature. A conversion takes about 1uS on an ESP32
+    //https://github.com/espressif/arduino-esp32/issues/102
+    vReal[i] = analogRead(33);
     vImag[i] = 0;
     while ((micros() - newTime) < sampling_period_us) { /* do nothing to wait */ }
   }
@@ -37,7 +39,7 @@ void captureAudioData() {
 
 void applyBand(int band, int value){
   value /= AMPLITUDE;
-  bands[band] = value;
+  if (value > bands[band]) bands[band] = value;
 }
 
 void analyzeAudioWithFFT() {
@@ -46,7 +48,7 @@ void analyzeAudioWithFFT() {
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
   for (int i = 2; i < (SAMPLES/2); i++){ // Don't use sample 0 and only the first SAMPLES/2 are usable.
     // Each array element represents a frequency and its value, is the amplitude. Note the frequencies are not discrete.
-    if (vReal[i] > 1500) { // Add a crude noise filter, 10 x amplitude or more
+    if (vReal[i] > NOIZE_THRESHOLD) { // Add a crude noise filter, 10 x amplitude or more
       if (i<=2 )             applyBand(0,(int)vReal[i]); // 125Hz
       if (i >2   && i<=4 )   applyBand(1,(int)vReal[i]); // 250Hz
       if (i >4   && i<=7 )   applyBand(2,(int)vReal[i]); // 500Hz
@@ -58,6 +60,12 @@ void analyzeAudioWithFFT() {
       //Serial.println(i);
     }
   }
+  //if (millis()%4 == 0) {
+    for (byte band = 0; band <= 7; band++) {
+      if (bands[band] > 0) bands[band] -= 1 * DECREMENT_SPEED;
+      if (bands[band] < 0) bands[band] = 0;
+    }
+  //}
 }
 
 #endif

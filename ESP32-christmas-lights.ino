@@ -20,6 +20,9 @@ WebServer server(80);
 #include "fft.hpp"
 #include "fairy-lights.hpp"
 
+TaskHandle_t ledTaskHandle;
+TaskHandle_t audioTaskHandle;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("booting...");
@@ -54,24 +57,31 @@ void setup() {
 
   fillString(3, "server ready");
   initFFT();
-}
 
-long lastTime = 0;
-long loopsCount = 0;
+  //loop() runs on core 1
+  xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
+  xTaskCreatePinnedToCore(audioTask, "audio-task", 10000, NULL, 1, &audioTaskHandle, 0);
+  fillString(4, "threads are active");
+}
 
 void loop() {
   captureAudioData();
   analyzeAudioWithFFT();
-  if (millis() - lastTime > 1000) {
-    lastTime = millis();
-    Serial.print("lps: ");
-    Serial.println(loopsCount);
-    loopsCount = 0;
+  vTaskDelay(1);
+}
+
+void ledTask(void* pvParameters) {
+  for (;;) {
+    updateLights();
+    vTaskDelay(1);
   }
-  updateLights();
-  server.handleClient();
-  loopsCount++;
-  delay(1);
+}
+
+void audioTask(void* pvParameters) {
+  for (;;) {
+    server.handleClient();
+    delay(2);
+  }
 }
 
 bool tryConnectWifi(int timeoutMs) {
