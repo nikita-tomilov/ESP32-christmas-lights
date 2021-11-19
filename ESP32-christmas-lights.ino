@@ -57,6 +57,7 @@ void setup() {
 
   fillString(3, "server ready");
   initFFT();
+  initFairyLights();
 
   //loop() runs on core 1
   xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
@@ -163,6 +164,14 @@ bool mDNS() {
   return MDNS.begin((const char*)mDNSName);
 }
 
+int limit(int ox, int mx) {
+  int x = ox;
+  if (x < 0) x = 0;
+  if (x > mx) x = mx;
+  return x;
+}
+
+char srvBuf[256];
 void setupServer() {
    server.on(F("/"), []() {
     server.send(200, "text/plain", "hello from esp32!");
@@ -173,11 +182,30 @@ void setupServer() {
     server.send(200, "text/plain", "User: '" + user + "'");
   });
 
-  server.on(UriBraces("/color/{}/{}/{}"), []() {
-    String rS = server.pathArg(0);
-    String gS = server.pathArg(1);
-    String bS = server.pathArg(2);
-    server.send(200, "text/plain", "RGB: " + rS + " " + gS + " " + bS);
+  server.on(UriBraces("/color/{}/{}/{}/{}"), []() {
+    String iS = server.pathArg(0);
+    String rS = server.pathArg(1);
+    String gS = server.pathArg(2);
+    String bS = server.pathArg(3);
+    int i = limit(iS.toInt(), 4);
+    int r = limit(rS.toInt(), 255);
+    int g = limit(gS.toInt(), 255);
+    int b = limit(bS.toInt(), 255);
+   
+    sprintf(srvBuf, "color %d val %d %d %d\n", i, r, g, b);
+    assignedColors[i][0] = r;
+    assignedColors[i][1] = g;
+    assignedColors[i][2] = b;
+    server.send(200, "text/plain", (const char*)srvBuf);
+  });
+
+  server.on(UriBraces("/colorMode/{}"), []() {
+    String mS = server.pathArg(0);
+    int m = limit(mS.toInt(), 6);
+   
+    sprintf(srvBuf, "color mode %d\n", m);
+    setColorMode(m);
+    server.send(200, "text/plain", (const char*)srvBuf);
   });
   
   server.on(UriRegex("^\\/users\\/([0-9]+)\\/devices\\/([0-9]+)$"), []() {
