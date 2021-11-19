@@ -1,10 +1,22 @@
 #include "display.hpp"
+#include "leds.hpp"
 
 int i = 0;
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("booting...");
+  
   initScreen();
+  drawString(0, 0, "display: OK");
+  
+  initLeds();
+  drawString(0, 8, "leds: OK");
+
+  setPixelColor(0, 255, 0, 0);
+  setPixelColor(1, 0, 255, 0);
+  setPixelColor(2, 0, 0, 255);
+  delay(5000);
 }
 
 void loop() {
