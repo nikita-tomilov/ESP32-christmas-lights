@@ -13,9 +13,10 @@ void setup() {
   initLeds();
   drawString(0, 8, "leds: OK");
 
-  setPixelColor(0, 255, 0, 0);
-  setPixelColor(1, 0, 255, 0);
-  setPixelColor(2, 0, 0, 255);
+  setPixelColor(0, 32, 0, 0);
+  setPixelColor(1, 0, 32, 0);
+  setPixelColor(2, 0, 0, 32);
+  drawLeds();
   delay(5000);
 }
 
