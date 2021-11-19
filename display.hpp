@@ -20,10 +20,23 @@ void initScreen() {
   display.setTextColor(SSD1306_WHITE);
 }
 
-void drawString(int x, int y, char* str) {
+void drawString(int x, int y, const char* str) {
   display.setCursor(x, y);
   display.println(str);
   display.display();
+}
+
+void drawString(int x, int y, String str) {
+  drawString(x, y, str.c_str());
+}
+
+void fillString(int x, int y, const char* str) {
+  display.fillRect(x, y, 128, 8, SSD1306_BLACK);
+  drawString(x, y, str);
+}
+
+void fillString(int x, int y, String str) {
+  fillString(x, y, str.c_str());
 }
 
 #endif
