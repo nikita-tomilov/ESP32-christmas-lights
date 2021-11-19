@@ -21,7 +21,7 @@ WebServer server(80);
 #include "fairy-lights.hpp"
 
 TaskHandle_t ledTaskHandle;
-TaskHandle_t audioTaskHandle;
+TaskHandle_t srvTaskHandle;
 
 void setup() {
   Serial.begin(115200);
@@ -60,26 +60,53 @@ void setup() {
 
   //loop() runs on core 1
   xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
-  xTaskCreatePinnedToCore(audioTask, "audio-task", 10000, NULL, 1, &audioTaskHandle, 0);
+  xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
   fillString(4, "threads are active");
 }
 
+long audioMs = 0;
+long audioCount = 0;
 void loop() {
   captureAudioData();
   analyzeAudioWithFFT();
-  vTaskDelay(1);
-}
 
-void ledTask(void* pvParameters) {
-  for (;;) {
-    updateLights();
-    vTaskDelay(1);
+  audioCount++;
+  if (millis() - audioMs > 1000) {
+    audioMs = millis();
+    //Serial.print("audio: ");
+    //Serial.println(audioCount);
+    audioCount = 0;
   }
 }
 
-void audioTask(void* pvParameters) {
+void ledTask(void* pvParameters) {
+  long ledMs = 0;
+  long ledCount = 0;
+  for (;;) {
+    updateLights();
+    vTaskDelay(1);
+    ledCount++;
+    if (millis() - ledMs > 1000) {
+      ledMs = millis();
+      //Serial.print("leds : ");
+      //Serial.println(ledCount);
+      ledCount = 0;
+    }
+  }
+}
+
+void srvTask(void* pvParameters) {
+  long srvMs = 0;
+  long srvCount = 0;
   for (;;) {
     server.handleClient();
+    srvCount++;
+    if (millis() - srvMs > 1000) {
+      srvMs = millis();
+      //Serial.print("srv  : ");
+      //Serial.println(srvCount);
+      srvCount = 0;
+    }
     delay(2);
   }
 }
