@@ -17,6 +17,8 @@ WebServer server(80);
 #include <uri/UriBraces.h>
 #include <uri/UriRegex.h>
 
+#include "fft.hpp"
+#include "fairy-lights.hpp"
 
 void setup() {
   Serial.begin(115200);
@@ -49,13 +51,27 @@ void setup() {
 
   fillString(3, "starting server...");
   setupServer();
-  delay(30000);
+
+  fillString(3, "server ready");
+  initFFT();
 }
 
+long lastTime = 0;
+long loopsCount = 0;
+
 void loop() {
-  fillString(4, "r e a d y");
+  captureAudioData();
+  analyzeAudioWithFFT();
+  if (millis() - lastTime > 1000) {
+    lastTime = millis();
+    Serial.print("lps: ");
+    Serial.println(loopsCount);
+    loopsCount = 0;
+  }
+  updateLights();
   server.handleClient();
-  delay(2);
+  loopsCount++;
+  delay(1);
 }
 
 bool tryConnectWifi(int timeoutMs) {
