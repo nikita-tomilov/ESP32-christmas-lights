@@ -66,7 +66,9 @@ void setup() {
   //loop() runs on core 1
   xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
   xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
-  fillString(4, "threads are active");
+  
+  fillString(4, "CM: " + getColorModeName());
+  fillString(5, "BR: " + getBrightnessModeName());
 
   Serial.println("r e a d y");
 }
@@ -170,7 +172,7 @@ bool mDNS() {
   return MDNS.begin((const char*)mDNSName);
 }
 
-int limit(int ox, int mx) {
+int cconstrain(int ox, int mx) {
   return constrain(ox, 0, mx);
 }
 
@@ -200,21 +202,23 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
 
 void acceptArg(String argName, String argValue) {
   if (argName.compareTo("brightness") == 0) {
-    int value = limit(argValue.toInt(), 255);
+    int value = cconstrain(argValue.toInt(), 255);
     assignedBrightness = value;
   } else if (argName.compareTo("brightnessMode") == 0) {
-    int value = limit(argValue.toInt(), BRIGHTNESS_MODE_COUNT - 1);
+    int value = cconstrain(argValue.toInt(), BRIGHTNESS_MODE_COUNT - 1);
     setBrightnessMode(value);
   } else if (argName.compareTo("colorMode") == 0) {
-    int value = limit(argValue.toInt(), COLOR_MODE_COUNT - 1);
+    int value = cconstrain(argValue.toInt(), COLOR_MODE_COUNT - 1);
     setColorMode(value);
   } else if (argName.compareTo("slowAnimationDelay") == 0) {
-    int value = limit(argValue.toInt(), 500, 5000);
+    int value = constrain(argValue.toInt(), 500, 5000);
     slowAnimationDelay = value;
   } else if (argName.compareTo("fastAnimationDelay") == 0) {
-    int value = limit(argValue.toInt(), 1, 100);
+    int value = constrain(argValue.toInt(), 1, 100);
     fastAnimationDelay = value;
   }
+  fillString(4, "CM: " + getColorModeName());
+  fillString(5, "BR: " + getBrightnessModeName());
 }
 
 char srvBuf[256];
