@@ -170,15 +170,8 @@ bool mDNS() {
   return MDNS.begin((const char*)mDNSName);
 }
 
-int limit(int ox, int mix, int mx) {
-  int x = ox;
-  if (x < mix) x = mix;
-  if (x > mx) x = mx;
-  return x;
-}
-
 int limit(int ox, int mx) {
-  return limit(ox, 0, mx);
+  return constrain(ox, 0, mx);
 }
 
 String getContentType(String filename) { // convert the file extension to the MIME type

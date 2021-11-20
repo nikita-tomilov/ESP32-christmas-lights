@@ -13,9 +13,9 @@ enum ColorMode {
 #define COLOR_MODE_COUNT 7
 
 enum BrignthessMode {
-  ONE_BRIGHTNESS, PWM_UP_DOWN, WAVE, FFT_SPECTRUM, FFT_BANDS
+  ONE_BRIGHTNESS, WAVE_CW, WAVE_CCW, RANDOM_BURSTS, FFT_SPECTRUM, FFT_BANDS
 };
-#define BRIGHTNESS_MODE_COUNT 5
+#define BRIGHTNESS_MODE_COUNT 6
 
 ColorMode colorMode = ONE_COLOR;
 BrignthessMode brightnessMode = ONE_BRIGHTNESS;
@@ -114,15 +114,39 @@ void updateColors() {
   }
 }
 
+int brSlowFlag = 0;
+int brFastFlag = 0;
 void updateBrightness() {
   for (int i = 0; i < NUMPIXELS; i++) {
     switch(brightnessMode) {
       case ONE_BRIGHTNESS:
-         brightness[i] = assignedBrightness;
+        brightness[i] = assignedBrightness;
+        break;
+      case RANDOM_BURSTS:
+        //Serial.println("govno");
+        //nothing; updated not here
         break;
       default:
         break;
     }
+  }
+
+  if (brSlowFlag == 1) {
+    if (brightnessMode == RANDOM_BURSTS) {
+      int i = random(0, 1000) % NUMPIXELS;
+      brightness[i] = assignedBrightness;
+    }
+    brSlowFlag = 0;
+  }
+  if (brFastFlag == 1) {
+    if (brightnessMode == RANDOM_BURSTS) {
+      for (int i = 0; i < NUMPIXELS; i++) {
+        if (brightness[i] > assignedBrightness / 8) {
+          brightness[i] = constrain(brightness[i] - 5, assignedBrightness / 8, 255);
+        }
+      }
+    }
+    brFastFlag = 0;
   }
 }
 
@@ -140,10 +164,25 @@ void colorsTick() {
   }
 }
 
+long brLastSlowTick = millis();
+long brLastFastTick = millis();
+void brTick() {
+  if (millis() - brLastSlowTick > slowAnimationDelay) {
+    brSlowFlag = 1;
+    brLastSlowTick = millis();
+  }
+  if (millis() - brLastFastTick > fastAnimationDelay) {
+    brFastFlag = 1;
+    brLastFastTick = millis();
+  }
+}
+
+
 
 void updateLights() {
   colorsTick();
   updateColors();
+  brTick();
   updateBrightness();
   for (int i = 0; i < NUMPIXELS; i++) {
     //int br = map(bands[i / 2], 0, AMPLITUDE, 0, 255);
