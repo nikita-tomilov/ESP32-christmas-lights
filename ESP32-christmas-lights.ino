@@ -23,6 +23,9 @@ WebServer server(80);
 TaskHandle_t ledTaskHandle;
 TaskHandle_t srvTaskHandle;
 
+#include "FS.h"
+#include "SPIFFS.h"
+
 void setup() {
   Serial.begin(115200);
   Serial.println("booting...");
@@ -54,6 +57,7 @@ void setup() {
 
   fillString(3, "starting server...");
   setupServer();
+  SPIFFS.begin();
 
   fillString(3, "server ready");
   initFFT();
@@ -63,6 +67,8 @@ void setup() {
   xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
   xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
   fillString(4, "threads are active");
+
+  Serial.println("r e a d y");
 }
 
 long audioMs = 0;
@@ -108,7 +114,7 @@ void srvTask(void* pvParameters) {
       //Serial.println(srvCount);
       srvCount = 0;
     }
-    delay(2);
+    delay(5);
   }
 }
 
@@ -171,18 +177,50 @@ int limit(int ox, int mx) {
   return x;
 }
 
+String getContentType(String filename) { // convert the file extension to the MIME type
+  if (filename.endsWith(".html")) return "text/html";
+  else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".js")) return "application/javascript";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
+  else if (filename.endsWith(".png")) return "image/png";
+  return "text/plain";
+}
+
+bool handleFileRead(String path) { // send the right file to the client (if it exists)
+  Serial.println("handleFileRead: " + path);
+  if (path.endsWith("/")) path += "index.html";         // If a folder is requested, send the index file
+  String contentType = getContentType(path);            // Get the MIME type
+  if (SPIFFS.exists(path)) {                            // If the file exists
+    delay(1);
+    File file = SPIFFS.open(path, "r");                 // Open it
+    size_t sent = server.streamFile(file, contentType); // And send it to the client
+    delay(1);
+    file.close();                                       // Then close the file again
+    return true;
+  }
+  /*Serial.println("\tFile Not Found;\nAvailable files:");
+  String str = "";
+  File dir = SPIFFS.open("/");
+  File file = dir.openNextFile();
+  while(file){
+    str += file.path();
+    str += " / ";
+    str += file.size();
+    str += "\r\n";
+    delay(1);
+  }
+  Serial.print(str);
+  Serial.println("Available files end\n\n");*/
+  return false;
+}
+
 char srvBuf[256];
 void setupServer() {
    server.on(F("/"), []() {
-    server.send(200, "text/plain", "hello from esp32!");
+    handleFileRead("index.html");
   });
 
-  server.on(UriBraces("/users/{}"), []() {
-    String user = server.pathArg(0);
-    server.send(200, "text/plain", "User: '" + user + "'");
-  });
-
-  server.on(UriBraces("/color/{}/{}/{}/{}"), []() {
+  server.on(UriBraces("/set/color/{}/{}/{}/{}"), []() {
     String iS = server.pathArg(0);
     String rS = server.pathArg(1);
     String gS = server.pathArg(2);
@@ -199,7 +237,7 @@ void setupServer() {
     server.send(200, "text/plain", (const char*)srvBuf);
   });
 
-  server.on(UriBraces("/colorMode/{}"), []() {
+  server.on(UriBraces("/set/colorMode/{}"), []() {
     String mS = server.pathArg(0);
     int m = limit(mS.toInt(), 6);
    
@@ -207,15 +245,41 @@ void setupServer() {
     setColorMode(m);
     server.send(200, "text/plain", (const char*)srvBuf);
   });
-  
-  server.on(UriRegex("^\\/users\\/([0-9]+)\\/devices\\/([0-9]+)$"), []() {
-    String user = server.pathArg(0);
-    String device = server.pathArg(1);
-    server.send(200, "text/plain", "User: '" + user + "' and Device: '" + device + "'");
+
+  server.on(UriBraces("/set/brightness/{}"), []() {
+    String bS = server.pathArg(0);
+    int b = limit(bS.toInt(), 255);
+   
+    sprintf(srvBuf, "brightness %d\n", b);
+    assignedBrightness = b;
+    server.send(200, "text/plain", (const char*)srvBuf);
   });
-  /*server.onNotFound([]() {
+
+  server.on(UriBraces("/set/brightnessMode/{}"), []() {
+    String mS = server.pathArg(0);
+    int m = limit(mS.toInt(), 4);
+   
+    sprintf(srvBuf, "brightness mode %d\n", m);
+    setColorMode(m);
+    server.send(200, "text/plain", (const char*)srvBuf);
+  });
+
+   server.on("/set/data", HTTP_POST, []() {
+    int argsc = server.args();
+    Serial.print("Got request with args:");
+    Serial.println(argsc);
+    for (int i = 0; i < argsc; i++) {
+      Serial.print(" - ");
+      Serial.print(server.argName(i));
+      Serial.print(" - ");
+      Serial.println(server.arg(i));
+    }
+    server.send(200, "text/plain", "send data ok\n");
+  });
+
+  server.onNotFound([]() {
   if (!handleFileRead(server.uri()))
     server.send(404, "text/plain", "404: Not Found");
-  });*/
+  });
   server.begin();
 }
