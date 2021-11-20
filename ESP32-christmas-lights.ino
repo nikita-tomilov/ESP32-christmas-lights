@@ -64,7 +64,7 @@ void setup() {
   initFairyLights();
 
   //loop() runs on core 1
-  xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 1, &ledTaskHandle, 1);
+  xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 2, &ledTaskHandle, 1);
   xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
   
   fillString(4, "CM: " + getColorModeName());
