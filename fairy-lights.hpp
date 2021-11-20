@@ -22,6 +22,7 @@ class IEffect {
 #include "color-mode-simple.hpp"
 #include "color-mode-rainbow.hpp"
 #include "brightness-mode-simple.hpp"
+#include "cobr-mode-fft.hpp"
 
 SingleColor singleColor;
 TwoColors twoColors;
@@ -30,18 +31,22 @@ Rainbow rainbow(0.0, false);
 Rainbow rainbowReversed(0.0, true);
 Rainbow rainbowCW(0.01, false);
 Rainbow rainbowCCW(-0.01, false);
+FFTEffect fftCCoarse(USE_COARSE_BANDS, AFFECT_COLOR);
+FFTEffect fftCFine(USE_FINE_BANDS, AFFECT_COLOR);
 
 SingleBrightness singleBrightness;
 RandomBrightnessBursts rndBrBursts;
+FFTEffect fftBrCoarse(USE_COARSE_BANDS, AFFECT_BRIGHTNESS);
+FFTEffect fftBrFine(USE_FINE_BANDS, AFFECT_BRIGHTNESS);
 
-#define COLOR_MODE_COUNT 7
+#define COLOR_MODE_COUNT 9
 IEffect *const colorModes[COLOR_MODE_COUNT] = {
-  &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW
+  &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW, &fftCCoarse, &fftCFine
 };
 
-#define BRIGHTNESS_MODE_COUNT 2
+#define BRIGHTNESS_MODE_COUNT 4
 IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
-  &singleBrightness, &rndBrBursts
+  &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine
 };
 
 int colorMode = 0;
