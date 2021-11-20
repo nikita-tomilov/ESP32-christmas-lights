@@ -170,11 +170,15 @@ bool mDNS() {
   return MDNS.begin((const char*)mDNSName);
 }
 
-int limit(int ox, int mx) {
+int limit(int ox, int mix, int mx) {
   int x = ox;
-  if (x < 0) x = 0;
+  if (x < mix) x = mix;
   if (x > mx) x = mx;
   return x;
+}
+
+int limit(int ox, int mx) {
+  return limit(ox, 0, mx);
 }
 
 String getContentType(String filename) { // convert the file extension to the MIME type
@@ -198,19 +202,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     file.close();                                       // Then close the file again
     return true;
   }
-  /*Serial.println("\tFile Not Found;\nAvailable files:");
-  String str = "";
-  File dir = SPIFFS.open("/");
-  File file = dir.openNextFile();
-  while(file){
-    str += file.path();
-    str += " / ";
-    str += file.size();
-    str += "\r\n";
-    delay(1);
-  }
-  Serial.print(str);
-  Serial.println("Available files end\n\n");*/
   return false;
 }
 
@@ -224,6 +215,12 @@ void acceptArg(String argName, String argValue) {
   } else if (argName.compareTo("colorMode") == 0) {
     int value = limit(argValue.toInt(), COLOR_MODE_COUNT - 1);
     setColorMode(value);
+  } else if (argName.compareTo("slowAnimationDelay") == 0) {
+    int value = limit(argValue.toInt(), 500, 5000);
+    slowAnimationDelay = value;
+  } else if (argName.compareTo("fastAnimationDelay") == 0) {
+    int value = limit(argValue.toInt(), 1, 100);
+    fastAnimationDelay = value;
   }
 }
 

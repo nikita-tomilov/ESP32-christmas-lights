@@ -21,15 +21,17 @@ ColorMode colorMode = ONE_COLOR;
 BrignthessMode brightnessMode = ONE_BRIGHTNESS;
 
 void setColorMode(int newMode) {
-  if ((newMode < 0) || (newMode > 6)) return;
+  if ((newMode < 0) || (newMode > COLOR_MODE_COUNT - 1)) return;
   colorMode = (ColorMode)(newMode);
 }
 
 void setBrightnessMode(int newMode) {
-  if ((newMode < 0) || (newMode > 4)) return;
+  if ((newMode < 0) || (newMode > BRIGHTNESS_MODE_COUNT - 1)) return;
   brightnessMode = (BrignthessMode)(newMode);
 }
 
+long slowAnimationDelay = 1000;
+long fastAnimationDelay = 10;
 
 int twoColorsTickValue = 1;
 int fiveColorsFlag = 0;
@@ -104,8 +106,8 @@ void updateColors() {
     fiveColorsFlag = 0;
   }
   if (rainbowMovingFlag) {
-    if (colorMode == RAINBOW_MOVING_CW) rainbowDelta = 0.001;
-    if (colorMode == RAINBOW_MOVING_CCW) rainbowDelta = -0.001;
+    if (colorMode == RAINBOW_MOVING_CW) rainbowDelta = 0.01;
+    if (colorMode == RAINBOW_MOVING_CCW) rainbowDelta = -0.01;
     rainbowStartingPoint += rainbowDelta;
     rainbowStartingPoint = cycleHue(rainbowStartingPoint);
     rainbowMovingFlag = 0;
@@ -124,9 +126,6 @@ void updateBrightness() {
   }
 }
 
-long slowAnimationDelay = 1000;
-long fastAnimationDelay = 10;
-
 long colorsLastSlowTick = millis();
 long colorsLastFastTick = millis();
 void colorsTick() {
@@ -137,6 +136,7 @@ void colorsTick() {
   }
   if (millis() - colorsLastFastTick > fastAnimationDelay) {
     rainbowMovingFlag = 1;
+    colorsLastFastTick = millis();
   }
 }
 
