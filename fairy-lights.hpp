@@ -10,10 +10,12 @@ uint8_t assignedBrightness = 128;
 enum ColorMode {
   ONE_COLOR, TWO_COLORS, FIVE_COLORS, RAINBOW, RAINBOW_MOVING_CW, RAINBOW_MOVING_CCW, FFT_COLOR_FROM_BANDS
 };
+#define COLOR_MODE_COUNT 7
 
 enum BrignthessMode {
   ONE_BRIGHTNESS, PWM_UP_DOWN, WAVE, FFT_SPECTRUM, FFT_BANDS
 };
+#define BRIGHTNESS_MODE_COUNT 5
 
 ColorMode colorMode = ONE_COLOR;
 BrignthessMode brightnessMode = ONE_BRIGHTNESS;
@@ -122,18 +124,18 @@ void updateBrightness() {
   }
 }
 
-long slowAnimationPeriod = 1000;
-long fastAnimationPeriod = 10;
+long slowAnimationDelay = 1000;
+long fastAnimationDelay = 10;
 
 long colorsLastSlowTick = millis();
 long colorsLastFastTick = millis();
 void colorsTick() {
-  if (millis() - colorsLastSlowTick > slowAnimationPeriod) {
+  if (millis() - colorsLastSlowTick > slowAnimationDelay) {
     twoColorsTickValue = 1 - twoColorsTickValue;
     fiveColorsFlag = 1;
     colorsLastSlowTick = millis();
   }
-  if (millis() - colorsLastFastTick > fastAnimationPeriod) {
+  if (millis() - colorsLastFastTick > fastAnimationDelay) {
     rainbowMovingFlag = 1;
   }
 }

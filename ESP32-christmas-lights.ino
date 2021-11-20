@@ -91,7 +91,7 @@ void ledTask(void* pvParameters) {
   long ledCount = 0;
   for (;;) {
     updateLights();
-    vTaskDelay(1);
+    delay(1);
     ledCount++;
     if (millis() - ledMs > 1000) {
       ledMs = millis();
@@ -114,7 +114,7 @@ void srvTask(void* pvParameters) {
       //Serial.println(srvCount);
       srvCount = 0;
     }
-    delay(5);
+    delay(1);
   }
 }
 
@@ -214,57 +214,26 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   return false;
 }
 
+void acceptArg(String argName, String argValue) {
+  if (argName.compareTo("brightness") == 0) {
+    int value = limit(argValue.toInt(), 255);
+    assignedBrightness = value;
+  } else if (argName.compareTo("brightnessMode") == 0) {
+    int value = limit(argValue.toInt(), BRIGHTNESS_MODE_COUNT - 1);
+    setBrightnessMode(value);
+  } else if (argName.compareTo("colorMode") == 0) {
+    int value = limit(argValue.toInt(), COLOR_MODE_COUNT - 1);
+    setColorMode(value);
+  }
+}
+
 char srvBuf[256];
 void setupServer() {
    server.on(F("/"), []() {
     handleFileRead("index.html");
   });
 
-  server.on(UriBraces("/set/color/{}/{}/{}/{}"), []() {
-    String iS = server.pathArg(0);
-    String rS = server.pathArg(1);
-    String gS = server.pathArg(2);
-    String bS = server.pathArg(3);
-    int i = limit(iS.toInt(), 4);
-    int r = limit(rS.toInt(), 255);
-    int g = limit(gS.toInt(), 255);
-    int b = limit(bS.toInt(), 255);
-   
-    sprintf(srvBuf, "color %d val %d %d %d\n", i, r, g, b);
-    assignedColors[i][0] = r;
-    assignedColors[i][1] = g;
-    assignedColors[i][2] = b;
-    server.send(200, "text/plain", (const char*)srvBuf);
-  });
-
-  server.on(UriBraces("/set/colorMode/{}"), []() {
-    String mS = server.pathArg(0);
-    int m = limit(mS.toInt(), 6);
-   
-    sprintf(srvBuf, "color mode %d\n", m);
-    setColorMode(m);
-    server.send(200, "text/plain", (const char*)srvBuf);
-  });
-
-  server.on(UriBraces("/set/brightness/{}"), []() {
-    String bS = server.pathArg(0);
-    int b = limit(bS.toInt(), 255);
-   
-    sprintf(srvBuf, "brightness %d\n", b);
-    assignedBrightness = b;
-    server.send(200, "text/plain", (const char*)srvBuf);
-  });
-
-  server.on(UriBraces("/set/brightnessMode/{}"), []() {
-    String mS = server.pathArg(0);
-    int m = limit(mS.toInt(), 4);
-   
-    sprintf(srvBuf, "brightness mode %d\n", m);
-    setColorMode(m);
-    server.send(200, "text/plain", (const char*)srvBuf);
-  });
-
-   server.on("/set/data", HTTP_POST, []() {
+  server.on("/set/data", HTTP_POST, []() {
     int argsc = server.args();
     Serial.print("Got request with args:");
     Serial.println(argsc);
@@ -273,6 +242,8 @@ void setupServer() {
       Serial.print(server.argName(i));
       Serial.print(" - ");
       Serial.println(server.arg(i));
+      acceptArg(server.argName(i), server.arg(i));
+      
     }
     server.send(200, "text/plain", "send data ok\n");
   });
