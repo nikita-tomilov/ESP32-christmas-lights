@@ -1,8 +1,3 @@
-//NOTE: this is gitignored.
-//You have to create your own file
-//and write your own creds there
-#include "wifi-details.h"
-
 #ifdef ESP32
 //for ESP32 I use WeMos LOLIN 32 with screen; leds are attached to pin 27
 
@@ -10,9 +5,11 @@
   #include "leds.hpp"
   #include "display.hpp"
   #include <WiFi.h>
+  #include <WiFiMulti.h>
   #include <ESPmDNS.h>
   #include <WebServer.h>
   WebServer server(80);
+  WiFiMulti wifiMulti;
   #include <uri/UriBraces.h>
   #include "SPIFFS.h"
   #include "FS.h"
@@ -28,6 +25,8 @@
   #include "leds.hpp"
   #include "no-display.hpp"
   #include <ESP8266WiFi.h>
+  #include <ESP8266WiFiMulti.h>
+  ESP8266WiFiMulti wifiMulti;
   #include <ESP8266mDNS.h>
   #include <ESP8266WebServer.h> 
   ESP8266WebServer server(80);
@@ -38,7 +37,7 @@
 #endif
 
 
-#define WIFI_AP_SSID "espXX-lights"
+#define WIFI_AP_SSID "esp-lights"
 char apSsid[64] = {0};
 char mDNSName[64] = {0};
 
@@ -57,7 +56,7 @@ void setup() {
 
   fillString(2, "wifi: connecting");
   if (tryConnectWifi(15000)) {
-    fillString(0, WIFI_SSID);
+    fillString(0, WiFi.SSID().c_str());
     fillString(1, WiFi.localIP().toString());
   } else {
     fillString(2, "wifi: configuring AP");
@@ -86,7 +85,7 @@ void setup() {
 
   #ifdef ESP32
     //loop() runs on core 1
-    xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 2, &ledTaskHandle, 1);
+    xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 3, &ledTaskHandle, 1);
     xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
   #endif
 
@@ -164,27 +163,29 @@ void srvTask(void* pvParameters) {
 }
 
 bool tryConnectWifi(int timeoutMs) {
-  Serial.println("trying to connect to:");
-  Serial.println(WIFI_SSID);
+  setPixelColor(0, 255, 0, 0);
+  Serial.println("trying to connect to wifi:");
   WiFi.mode(WIFI_OFF);
   Serial.println("wifi offed");
   WiFi.mode(WIFI_STA);
   Serial.println("wifi mode sta");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  int br = 30;
-  int delta = 10;
-  long now = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(50);
-    br += delta;
-    if ((br > 200) || (br < 20)) delta = -1 * delta;
-    setPixelColor(0, br, 0, 0);
-    drawLeds();
-    if (millis() - now > timeoutMs) {
-      return false;
-    }
+
+  //NOTE: this is gitignored.
+  //You have to create your own file
+  //and write your own creds there
+  //e.g. wifiMulti.addAP("ssid_from_AP_1", "your_password_for_AP_1");
+  #include "wifi-details.h"
+
+  if (wifiMulti.run(timeoutMs) == WL_CONNECTED) {
+    Serial.print("WiFi connected: ");
+    Serial.print(WiFi.SSID());
+    Serial.print(" ");
+    Serial.println(WiFi.localIP());
+    return true;
+  } else {
+    Serial.println("WiFi not connected!");
+    return false;
   }
-  return true;
 }
 
 String getChipId() {
@@ -200,6 +201,7 @@ String getChipId() {
 }
 
 bool createAP() {
+  setPixelColor(0, 0, 0, 255);
   String chipId = getChipId();
   sprintf(apSsid, "%s-%s", WIFI_AP_SSID, chipId.c_str());
   Serial.println("trying ap:");
@@ -276,9 +278,12 @@ void sendStatus() {
   String status = "fft=";
   #ifdef ESP32
     status += "true";
+    status += "\n&hw=ESP32-" + getChipId();
   #elif defined(ESP8266)
     status += "false";
-  #endif
+    status += "\n&hw=ESP8266-" + getChipId();
+  #endif  
+  status += "\n&ip=" + WiFi.localIP().toString();
   status += "\n&colorModes=";
   for (int i = 0; i < COLOR_MODE_COUNT; i++) {
     status += String(i) + ":" + getColorModeName(i) + ";";
@@ -304,7 +309,7 @@ void sendStatus() {
 char srvBuf[256];
 void setupServer() {
    server.on(F("/"), []() {
-    handleFileRead("index.html");
+    handleFileRead("/");
   });
 
   server.on("/set/data", HTTP_POST, []() {
