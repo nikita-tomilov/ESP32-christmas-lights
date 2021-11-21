@@ -79,12 +79,20 @@ void setBrightnessMode(int newMode) {
   brightnessMode =  newMode;
 }
 
+String getColorModeName(int idx) {
+  return colorModes[idx]->name();
+}
+
 String getColorModeName() {
-  return colorModes[colorMode]->name();
+  return getColorModeName(colorMode);
+}
+
+String getBrightnessModeName(int idx) {
+  return brightnessModes[idx]->name();
 }
 
 String getBrightnessModeName() {
-  return brightnessModes[brightnessMode]->name();
+  return getBrightnessModeName(brightnessMode);
 }
 
 long colorsLastSlowTick = millis();

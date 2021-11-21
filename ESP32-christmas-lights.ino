@@ -272,6 +272,35 @@ void acceptArg(String argName, String argValue) {
   fillString(5, "BR: " + getBrightnessModeName());
 }
 
+void sendStatus() {
+  String status = "fft=";
+  #ifdef ESP32
+    status += "true";
+  #elif defined(ESP8266)
+    status += "false";
+  #endif
+  status += "\n&colorModes=";
+  for (int i = 0; i < COLOR_MODE_COUNT; i++) {
+    status += String(i) + ":" + getColorModeName(i) + ";";
+  }
+  status += "\n&brightnessModes=";
+  for (int i = 0; i < BRIGHTNESS_MODE_COUNT; i++) {
+    status += String(i) + ":" + getBrightnessModeName(i) + ";";
+  }
+  status += "\n&brightness=" + String(assignedBrightness);
+  status += "\n&brightnessMode=" + String(brightnessMode);
+  status += "\n&colorMode=" + String(colorMode);
+  char buf[10] = {0};
+  for (int i = 0; i < 5; i++) {
+    sprintf(buf, "%02X%02X%02X", assignedColors[i][0], assignedColors[i][1], assignedColors[i][2]);
+    status += "\n&color" + String(i) + "=" + String(buf);
+  }
+  status += "\n&slowAnimationDelay=" + String(slowAnimationDelay);
+  status += "\n&fastAnimationDelay=" + String(fastAnimationDelay);
+  status += "\n";
+  server.send(200, "text/plain", status);
+}
+
 char srvBuf[256];
 void setupServer() {
    server.on(F("/"), []() {
@@ -291,6 +320,10 @@ void setupServer() {
       
     }
     server.send(200, "text/plain", "send data ok\n");
+  });
+
+  server.on("/get/data", HTTP_GET, []() {
+    sendStatus();
   });
 
   server.onNotFound([]() {
