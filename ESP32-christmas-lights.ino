@@ -1,30 +1,49 @@
-#include "display.hpp"
-#include "leds.hpp"
-
 //NOTE: this is gitignored.
 //You have to create your own file
 //and write your own creds there
 #include "wifi-details.h"
 
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#define WIFI_AP_SSID "esp32-lights"
+#ifdef ESP32
+//for ESP32 I use WeMos LOLIN 32 with screen; leds are attached to pin 27
+
+  #define LED_STRIP_PIN 27
+  #include "leds.hpp"
+  #include "display.hpp"
+  #include <WiFi.h>
+  #include <ESPmDNS.h>
+  #include <WebServer.h>
+  WebServer server(80);
+  #include <uri/UriBraces.h>
+  #include "SPIFFS.h"
+  #include "FS.h"
+
+  TaskHandle_t ledTaskHandle;
+  TaskHandle_t srvTaskHandle;
+  #include "fft.hpp"
+
+#elif defined(ESP8266)
+//for ESP8266 I use WeMos D1 Mini without screen; leds are attached to D4/GPIO2
+
+  #define LED_STRIP_PIN 2
+  #include "leds.hpp"
+  #include "no-display.hpp"
+  #include <ESP8266WiFi.h>
+  #include <ESP8266mDNS.h>
+  #include <ESP8266WebServer.h> 
+  ESP8266WebServer server(80);
+  #include <FS.h>
+
+#else
+#error Please use ESP32 or ESP8266
+#endif
+
+
+#define WIFI_AP_SSID "espXX-lights"
 char apSsid[64] = {0};
 char mDNSName[64] = {0};
 
-#include <WebServer.h>
-WebServer server(80);
-#include <uri/UriBraces.h>
-#include <uri/UriRegex.h>
-
-#include "fft.hpp"
 #include "fairy-lights.hpp"
 
-TaskHandle_t ledTaskHandle;
-TaskHandle_t srvTaskHandle;
-
-#include "FS.h"
-#include "SPIFFS.h"
 
 void setup() {
   Serial.begin(115200);
@@ -60,22 +79,27 @@ void setup() {
   SPIFFS.begin();
 
   fillString(3, "server ready");
-  initFFT();
+  #ifdef ESP32
+    initFFT();
+  #endif
   initFairyLights();
 
-  //loop() runs on core 1
-  xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 2, &ledTaskHandle, 1);
-  xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
-  
+  #ifdef ESP32
+    //loop() runs on core 1
+    xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 2, &ledTaskHandle, 1);
+    xTaskCreatePinnedToCore(srvTask, "audio-task", 10000, NULL, 1, &srvTaskHandle, 0);
+  #endif
+
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
 
   Serial.println("r e a d y");
 }
 
+#ifdef ESP32
 long audioMs = 0;
 long audioCount = 0;
-void loop() {
+void audioLoopAction() {
   captureAudioData();
   analyzeAudioWithFFT();
 
@@ -87,36 +111,55 @@ void loop() {
     audioCount = 0;
   }
 }
+#endif
+
+long ledMs = 0;
+long ledCount = 0;
+void ledTaskAction() {
+  updateLights();
+  delay(1);
+  ledCount++;
+  if (millis() - ledMs > 1000) {
+    ledMs = millis();
+    //Serial.print("leds : ");
+    //Serial.println(ledCount);
+    ledCount = 0;
+  }
+}
+
+long srvMs = 0;
+long srvCount = 0;
+void srvTaskAction() {
+  server.handleClient();
+  srvCount++;
+  if (millis() - srvMs > 1000) {
+    srvMs = millis();
+    //Serial.print("srv  : ");
+    //Serial.println(srvCount);
+    srvCount = 0;
+  }
+  delay(1);
+}
+
+void loop() {
+  #ifdef ESP32
+    audioLoopAction();
+  #elif defined(ESP8266)
+    ledTaskAction();
+    srvTaskAction();
+    MDNS.update();
+  #endif
+}
 
 void ledTask(void* pvParameters) {
-  long ledMs = 0;
-  long ledCount = 0;
   for (;;) {
-    updateLights();
-    delay(1);
-    ledCount++;
-    if (millis() - ledMs > 1000) {
-      ledMs = millis();
-      //Serial.print("leds : ");
-      //Serial.println(ledCount);
-      ledCount = 0;
-    }
+    ledTaskAction();
   }
 }
 
 void srvTask(void* pvParameters) {
-  long srvMs = 0;
-  long srvCount = 0;
   for (;;) {
-    server.handleClient();
-    srvCount++;
-    if (millis() - srvMs > 1000) {
-      srvMs = millis();
-      //Serial.print("srv  : ");
-      //Serial.println(srvCount);
-      srvCount = 0;
-    }
-    delay(1);
+    srvTaskAction();
   }
 }
 
@@ -144,17 +187,21 @@ bool tryConnectWifi(int timeoutMs) {
   return true;
 }
 
-uint32_t getChipId() {
+String getChipId() {
+#ifdef ESP32
   uint32_t chipId = 0;
   for(int i=0; i<17; i=i+8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
-  return chipId;
+  return String(chipId, HEX);
+#elif defined(ESP8266)
+  return String(ESP.getChipId(), HEX);
+#endif
 }
 
 bool createAP() {
-  uint32_t chipId = getChipId();
-  sprintf(apSsid, "%s-%u", WIFI_AP_SSID, chipId);
+  String chipId = getChipId();
+  sprintf(apSsid, "%s-%s", WIFI_AP_SSID, chipId.c_str());
   Serial.println("trying ap:");
   Serial.println(apSsid);
   WiFi.mode(WIFI_OFF);
@@ -167,8 +214,12 @@ bool createAP() {
 }
 
 bool mDNS() {
-  uint32_t chipId = getChipId();
-  sprintf(mDNSName, "esp32-%u", chipId);
+  String chipId = getChipId();
+  #ifdef ESP32
+    sprintf(mDNSName, "esp32-%s", chipId.c_str());
+  #elif defined(ESP8266)
+    sprintf(mDNSName, "esp8266-%s", chipId.c_str());
+  #endif
   return MDNS.begin((const char*)mDNSName);
 }
 

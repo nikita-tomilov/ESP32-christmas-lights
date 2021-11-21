@@ -22,7 +22,10 @@ class IEffect {
 #include "color-mode-simple.hpp"
 #include "color-mode-rainbow.hpp"
 #include "brightness-mode-simple.hpp"
+
+#ifdef ESP32
 #include "cobr-mode-fft.hpp"
+#endif
 
 SingleColor singleColor;
 TwoColors twoColors;
@@ -31,13 +34,20 @@ Rainbow rainbow(0.0, false);
 Rainbow rainbowReversed(0.0, true);
 Rainbow rainbowCW(0.01, false);
 Rainbow rainbowCCW(-0.01, false);
-FFTEffect fftCCoarse(USE_COARSE_BANDS, AFFECT_COLOR);
-FFTEffect fftCFine(USE_FINE_BANDS, AFFECT_COLOR);
-
 SingleBrightness singleBrightness;
 RandomBrightnessBursts rndBrBursts;
+
+#ifdef ESP32
+FFTEffect fftCCoarse(USE_COARSE_BANDS, AFFECT_COLOR);
+FFTEffect fftCFine(USE_FINE_BANDS, AFFECT_COLOR);
 FFTEffect fftBrCoarse(USE_COARSE_BANDS, AFFECT_BRIGHTNESS);
 FFTEffect fftBrFine(USE_FINE_BANDS, AFFECT_BRIGHTNESS);
+#elif defined(ESP8266)
+SingleColor fftCCoarse;
+SingleColor fftCFine;
+SingleBrightness fftBrCoarse;
+SingleBrightness fftBrFine;
+#endif
 
 #define COLOR_MODE_COUNT 9
 IEffect *const colorModes[COLOR_MODE_COUNT] = {
@@ -48,6 +58,13 @@ IEffect *const colorModes[COLOR_MODE_COUNT] = {
 IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
   &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine
 };
+
+#ifdef ESP8266
+#undef COLOR_MODE_COUNT 
+#define COLOR_MODE_COUNT 7
+#undef BRIGHTNESS_MODE_COUNT 
+#define BRIGHTNESS_MODE_COUNT 2
+#endif
 
 int colorMode = 0;
 int brightnessMode = 0;
