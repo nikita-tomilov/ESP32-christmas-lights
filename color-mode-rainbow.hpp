@@ -30,7 +30,7 @@ void Rainbow::fastAction() {
     for (int j = 0; j < 3; j++) {
       int idx = i;
       if (_reverseIdx) {
-        idx = NUMPIXELS - idx;
+        idx = NUMPIXELS - 1 - idx;
       }
       colors[idx][j] = (int)(rgb[j] * 255.0);
     }
