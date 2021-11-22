@@ -2,6 +2,8 @@
 #define USE_COARSE_BANDS false
 #define AFFECT_BRIGHTNESS true
 #define AFFECT_COLOR false
+#define GO_FROM_MIDDLE true
+#define GO_FROM_BEGINNING false
 
 class FFTEffect : public IEffect {
   public:
@@ -10,10 +12,12 @@ class FFTEffect : public IEffect {
     void slowAction();
     void fastAction();
     String name();
-    FFTEffect(bool shallUseFineBands, bool shallAffectBrightness) : _shallUseFineBands(shallUseFineBands), _shallAffectBrightness(shallAffectBrightness) {};
+    FFTEffect(bool shallUseFineBands, bool shallAffectBrightness, bool shallGoFromMiddle) : _shallUseFineBands(shallUseFineBands), _shallAffectBrightness(shallAffectBrightness), _shallGoFromMiddle(shallGoFromMiddle) {};
   private:
     bool _shallUseFineBands;
     bool _shallAffectBrightness;
+    bool _shallGoFromMiddle;
+    void applyValue(int i, int targetValue);
 };
 
 int targetValue[NUMPIXELS];
@@ -29,17 +33,34 @@ long imap(long x, long in_min, long in_max, long out_min, long out_max) {
   if (ans > out_max) ans = out_max;
   return ans;
 }
+float redHue = 0.0;
+float greenHue = 120.0 / 360.0;
+
+void FFTEffect::applyValue(int i, int targetValue) {
+  if (_shallAffectBrightness) {
+    brightness[i] = targetValue;
+  } else {
+    float h = fmap(targetValue, 0, 255, greenHue, redHue);
+    float rgb[3];
+    hsv2rgb(h, 1.0, 1.0, rgb);
+    for (int j = 0; j < 3; j++) {
+      colors[i][j] = (int)(rgb[j] * 255.0);
+    }
+  }
+}
 
 void FFTEffect::tick() {
-  float redHue = 0.0;
-  float greenHue = 120.0 / 360.0;
-  for (int i = 0; i < NUMPIXELS; i++) {
+  int n = NUMPIXELS;
+  if (_shallGoFromMiddle) {
+    n = NUMPIXELS / 2;
+  }
+  for (int i = 0; i < n; i++) {
     int value = 0;
     if (_shallUseFineBands) {
-      int fineBandIdx = map(i, 0, NUMPIXELS, 0, FINE_BANDS);
+      int fineBandIdx = map(i, 0, n, 0, FINE_BANDS);
       value = fineBands[fineBandIdx];
     } else {
-      int coarseBandIdx = i / 2;
+      int coarseBandIdx = map(i, 0, n, 0, COARSE_BANDS);
       value = coarseBands[coarseBandIdx];
     }
 
@@ -51,16 +72,12 @@ void FFTEffect::tick() {
     if (value > targetValue[i]) {
       targetValue[i] = value;
     }
-    
-    if (_shallAffectBrightness) {
-      brightness[i] = targetValue[i];
+
+    if (_shallUseFineBands) {
+      applyValue(n - i, targetValue[i]);
+      applyValue(NUMPIXELS - (n - i), targetValue[i]);
     } else {
-      float h = fmap(targetValue[i], 0, 255, greenHue, redHue);
-      float rgb[3];
-      hsv2rgb(h, 1.0, 1.0, rgb);
-      for (int j = 0; j < 3; j++) {
-        colors[i][j] = (int)(rgb[j] * 255.0);
-      }
+      applyValue(i, targetValue[i]);
     }
   }
 }
@@ -78,6 +95,9 @@ String FFTEffect::name() {
   String band = " coarse";
   if (_shallUseFineBands) {
     band = " fine";
+  }
+  if (_shallGoFromMiddle) {
+    band += " sym";
   }
   return "FFT" + band;
 }

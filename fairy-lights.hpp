@@ -38,32 +38,37 @@ SingleBrightness singleBrightness;
 RandomBrightnessBursts rndBrBursts;
 
 #ifdef ESP32
-FFTEffect fftCCoarse(USE_COARSE_BANDS, AFFECT_COLOR);
-FFTEffect fftCFine(USE_FINE_BANDS, AFFECT_COLOR);
-FFTEffect fftBrCoarse(USE_COARSE_BANDS, AFFECT_BRIGHTNESS);
-FFTEffect fftBrFine(USE_FINE_BANDS, AFFECT_BRIGHTNESS);
+  FFTEffect fftCCoarse  (USE_COARSE_BANDS, AFFECT_COLOR,      GO_FROM_BEGINNING);
+  FFTEffect fftCFine    (USE_FINE_BANDS,   AFFECT_COLOR,      GO_FROM_BEGINNING);
+  FFTEffect fftCCoarseS (USE_COARSE_BANDS, AFFECT_COLOR,      GO_FROM_MIDDLE);
+  FFTEffect fftCFineS   (USE_FINE_BANDS,   AFFECT_COLOR,      GO_FROM_MIDDLE);
+  FFTEffect fftBrCoarse (USE_COARSE_BANDS, AFFECT_BRIGHTNESS, GO_FROM_BEGINNING);
+  FFTEffect fftBrFine   (USE_FINE_BANDS,   AFFECT_BRIGHTNESS, GO_FROM_BEGINNING);
+  FFTEffect fftBrCoarseS(USE_COARSE_BANDS, AFFECT_BRIGHTNESS, GO_FROM_MIDDLE);
+  FFTEffect fftBrFineS  (USE_FINE_BANDS,   AFFECT_BRIGHTNESS, GO_FROM_MIDDLE);
+  
+  #define COLOR_MODE_COUNT 11
+  IEffect *const colorModes[COLOR_MODE_COUNT] = {
+    &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW, &fftCCoarse, &fftCFine, &fftCCoarseS, &fftCFineS
+  };
+  
+  #define BRIGHTNESS_MODE_COUNT 6
+  IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
+    &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine, &fftBrCoarseS, &fftBrFineS
+  };
+
 #elif defined(ESP8266)
-SingleColor fftCCoarse;
-SingleColor fftCFine;
-SingleBrightness fftBrCoarse;
-SingleBrightness fftBrFine;
-#endif
 
-#define COLOR_MODE_COUNT 9
-IEffect *const colorModes[COLOR_MODE_COUNT] = {
-  &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW, &fftCCoarse, &fftCFine
-};
-
-#define BRIGHTNESS_MODE_COUNT 4
-IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
-  &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine
-};
-
-#ifdef ESP8266
-#undef COLOR_MODE_COUNT 
 #define COLOR_MODE_COUNT 7
-#undef BRIGHTNESS_MODE_COUNT 
-#define BRIGHTNESS_MODE_COUNT 2
+  IEffect *const colorModes[COLOR_MODE_COUNT] = {
+    &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW
+  };
+  
+  #define BRIGHTNESS_MODE_COUNT 2
+  IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
+    &singleBrightness, &rndBrBursts
+  };
+
 #endif
 
 int colorMode = 0;
