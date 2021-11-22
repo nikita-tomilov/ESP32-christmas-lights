@@ -19,7 +19,7 @@ class FFTEffect : public IEffect {
 void FFTEffect::init() {}
 void FFTEffect::tick() {
   float redHue = 0.0;
-  float blueHue = 245.0 / 360.0;
+  float greenHue = 120.0 / 360.0;
   float maxValueAcrossFineBands = 0;
   if (_shallUseFineBands) {
     for (int i = 0; i < FINE_BANDS; i++) {
@@ -33,16 +33,15 @@ void FFTEffect::tick() {
     if (_shallUseFineBands) {
       int fineBandIdx = map(i, 0, NUMPIXELS, 0, FINE_BANDS);
       value = fineBands[fineBandIdx];
-      value = fmap(value, 0, GAIN, 0, 255);
     } else {
       int coarseBandIdx = i / 2;
       value = coarseBands[coarseBandIdx];
-      value = fmap(value, 0, GAIN, 0, 255);
     }
     if (_shallAffectBrightness) {
+      value = fmap(value, 0, GAIN, 0, assignedBrightness);
       brightness[i] = value;
     } else {
-      float h = fmap(value * 2, 0, 255, blueHue, redHue);
+      float h = fmap(value, 0, GAIN, greenHue, redHue);
       float rgb[3];
       hsv2rgb(h, 1.0, 1.0, rgb);
       for (int j = 0; j < 3; j++) {
