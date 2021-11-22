@@ -41,6 +41,7 @@
 char apSsid[64] = {0};
 char mDNSName[64] = {0};
 
+#include "autodiscovery.hpp"
 #include "fairy-lights.hpp"
 
 
@@ -91,6 +92,7 @@ void setup() {
 
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
+  initAutodiscovery();
 
   Serial.println("r e a d y");
 }
@@ -130,6 +132,7 @@ long srvMs = 0;
 long srvCount = 0;
 void srvTaskAction() {
   server.handleClient();
+  tryUpdateAutodiscovery();
   srvCount++;
   if (millis() - srvMs > 1000) {
     srvMs = millis();
@@ -284,6 +287,7 @@ void sendStatus() {
     status += "\n&hw=ESP8266-" + getChipId();
   #endif  
   status += "\n&ip=" + WiFi.localIP().toString();
+  status += "\n&autodiscovery=" + buildAutodiscoveredString();
   status += "\n&colorModes=";
   for (int i = 0; i < COLOR_MODE_COUNT; i++) {
     status += String(i) + ":" + getColorModeName(i) + ";";
