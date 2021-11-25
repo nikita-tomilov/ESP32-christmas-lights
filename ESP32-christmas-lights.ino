@@ -263,8 +263,10 @@ void restorePreferences() {
   setColorMode(prefsGetInt("colorMode",  0));
   slowAnimationDelay = prefsGetInt("slowAnimationDelay",  1000);
   fastAnimationDelay = prefsGetInt("fastAnimationDelay",  10);
+#ifdef ESP32
   setInputGain(prefsGetFloat("inputGain",  1.0));
   setCutoff(prefsGetInt("cutoff",  800));
+#endif
   restoreColor(0, 255, 255, 255);
   restoreColor(1, 255, 0, 0);
   restoreColor(2, 0, 255, 0);
@@ -326,7 +328,9 @@ void acceptArg(String argName, String argValue) {
     int value = constrain(argValue.toInt(), 1, 100);
     fastAnimationDelay = value;
     prefsPutInt("fastAnimationDelay",  value);
-  } else if (argName.compareTo("inputGain") == 0) {
+  } 
+#ifdef ESP32
+  else if (argName.compareTo("inputGain") == 0) {
     float value = cconstrain(argValue.toFloat(), 0, 2); //todo: float
     setInputGain(value);
     prefsPutFloat("inputGain",  value);
@@ -335,6 +339,7 @@ void acceptArg(String argName, String argValue) {
     setCutoff(value);
     prefsPutInt("cutoff",  value);
   }
+#endif
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
 }
@@ -368,8 +373,10 @@ void sendStatus() {
   }
   status += "\n&slowAnimationDelay=" + String(slowAnimationDelay);
   status += "\n&fastAnimationDelay=" + String(fastAnimationDelay);
+#ifdef ESP32
   status += "\n&inputGain=" + String(getInputGain());
   status += "\n&cutoff=" + String(getCutoff());
+#endif
   status += "\n";
   server.send(200, "text/plain", status);
 }
