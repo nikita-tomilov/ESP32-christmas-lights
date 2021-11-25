@@ -13,8 +13,8 @@ arduinoFFT FFT = arduinoFFT();
 #define SAMPLING_FREQUENCY 40000 // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
 #define DECREMENT_SPEED 5
 
-#define INPUT_COEF 1 // how much the input signal from ADC is amplified
-#define LOW_PASS 800 // cutoff the fft-computed amplitudes below this mark
+double INPUT_COEF = 1.0; // how much the input signal from ADC is amplified
+int LOW_PASS = 800; // cutoff the fft-computed amplitudes below this mark
 #define MAX_COEF 1.1 // amplify the maximum amplitude from FFT by this value to make visualizing more appealing
 #define NORMALIZE 0  // normalize peaks so that for same volume amp of low and high frequencies shall be equal
 
@@ -33,6 +33,22 @@ volatile int coarseBands[COARSE_BANDS] = {0};
 
 #define FINE_BANDS 8
 volatile int fineBands[FINE_BANDS] = {0};
+
+void setInputGain(double gain) {
+  INPUT_COEF = gain;
+}
+
+double getInputGain() {
+  return INPUT_COEF;
+}
+
+void setCutoff(int value) {
+  LOW_PASS = value;
+}
+
+int getCutoff() {
+  return LOW_PASS;
+}
 
 long samplingPeriodUs;
 void initFFT() {

@@ -272,6 +272,12 @@ void acceptArg(String argName, String argValue) {
   } else if (argName.compareTo("fastAnimationDelay") == 0) {
     int value = constrain(argValue.toInt(), 1, 100);
     fastAnimationDelay = value;
+  } else if (argName.compareTo("inputGain") == 0) {
+    int value = constrain(argValue.toInt(), 0, 2); //todo: float
+    setInputGain(value);
+  } else if (argName.compareTo("cutoff") == 0) {
+    int value = constrain(argValue.toInt(), 500, 4000);
+    setCutoff(value);
   }
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
@@ -306,6 +312,8 @@ void sendStatus() {
   }
   status += "\n&slowAnimationDelay=" + String(slowAnimationDelay);
   status += "\n&fastAnimationDelay=" + String(fastAnimationDelay);
+  status += "\n&inputGain=" + String(getInputGain());
+  status += "\n&cutoff=" + String(getCutoff());
   status += "\n";
   server.send(200, "text/plain", status);
 }
