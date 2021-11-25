@@ -44,7 +44,6 @@ char mDNSName[64] = {0};
 #include "autodiscovery.hpp"
 #include "fairy-lights.hpp"
 
-
 void setup() {
   Serial.begin(115200);
   Serial.println("booting...");
@@ -84,6 +83,8 @@ void setup() {
   #endif
   initFairyLights();
 
+  restorePreferences();
+
   #ifdef ESP32
     //loop() runs on core 1
     xTaskCreatePinnedToCore(ledTask, "led-task", 10000, NULL, 3, &ledTaskHandle, 1);
@@ -93,7 +94,6 @@ void setup() {
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
   initAutodiscovery();
-
   Serial.println("r e a d y");
 }
 
@@ -256,28 +256,98 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   return false;
 }
 
+void prefsPutInt(char* key, int value) {
+  //Serial.println("Write value " + String(key) + " : " + String(value));
+  char buf[64];
+  sprintf(buf, "/%s", key);
+  File f = SPIFFS.open(buf, "w");
+  if (!f) {
+    Serial.println("error opening file " + String(key));
+    return;
+  }
+  f.write((uint8_t*)(&value), sizeof(int));
+  f.close();
+}
+
+int prefsGetInt(char* key, int defaultValue) {
+  char buf[64];
+  sprintf(buf, "/%s", key);
+  File f = SPIFFS.open(buf, "r");
+  if (!f) {
+    //Serial.println("Read value " + String(key) + " answered default " + String(defaultValue));
+    return defaultValue;
+  }
+  int value;
+  int b = f.read((uint8_t*)(&value), sizeof(int));
+  if (b != sizeof(int)) {
+    f.close();
+    //Serial.println("Read value " + String(key) + " answered default " + String(defaultValue));
+    return defaultValue;
+  }
+  f.close();
+  //Serial.println("Read value " + String(key) + " answered " + String(value));
+  return value;
+}
+
+void prefsPutFloat(char* key, float value) {
+  prefsPutInt(key, value * 10000);
+}
+
+float prefsGetFloat(char* key, float defaultValue) {
+  int defVal = defaultValue * 10000;
+  int val = prefsGetInt(key, defVal);
+  return (float)(defVal) / 10000;
+}
+
+
+//TODO: color
+void restorePreferences() {
+  assignedBrightness = prefsGetInt("brightness",  128);
+  setBrightnessMode(prefsGetInt("brightnessMode",  0));
+  setColorMode(prefsGetInt("colorMode",  0));
+  slowAnimationDelay = prefsGetInt("slowAnimationDelay",  1000);
+  fastAnimationDelay = prefsGetInt("fastAnimationDelay",  10);
+  setInputGain(prefsGetFloat("inputGain",  1.0));
+  setCutoff(prefsGetInt("cutoff",  800));
+  Serial.println("settings restored");
+}
+
+float cconstrain(float x, float a, float b) {
+  if (x < a) return a;
+  if (x > b) return b;
+  return x;
+}
+
+//TODO: color
 void acceptArg(String argName, String argValue) {
   if (argName.compareTo("brightness") == 0) {
     int value = cconstrain(argValue.toInt(), 255);
     assignedBrightness = value;
+    prefsPutInt("brightness",  value);
   } else if (argName.compareTo("brightnessMode") == 0) {
     int value = cconstrain(argValue.toInt(), BRIGHTNESS_MODE_COUNT - 1);
     setBrightnessMode(value);
+    prefsPutInt("brightnessMode",  value);
   } else if (argName.compareTo("colorMode") == 0) {
     int value = cconstrain(argValue.toInt(), COLOR_MODE_COUNT - 1);
     setColorMode(value);
+    prefsPutInt("colorMode",  value);
   } else if (argName.compareTo("slowAnimationDelay") == 0) {
     int value = constrain(argValue.toInt(), 500, 5000);
     slowAnimationDelay = value;
+    prefsPutInt("slowAnimationDelay",  value);
   } else if (argName.compareTo("fastAnimationDelay") == 0) {
     int value = constrain(argValue.toInt(), 1, 100);
     fastAnimationDelay = value;
+    prefsPutInt("fastAnimationDelay",  value);
   } else if (argName.compareTo("inputGain") == 0) {
-    int value = constrain(argValue.toInt(), 0, 2); //todo: float
+    float value = cconstrain(argValue.toFloat(), 0, 2); //todo: float
     setInputGain(value);
+    prefsPutFloat("inputGain",  value);
   } else if (argName.compareTo("cutoff") == 0) {
     int value = constrain(argValue.toInt(), 500, 4000);
     setCutoff(value);
+    prefsPutInt("cutoff",  value);
   }
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
