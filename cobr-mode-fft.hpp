@@ -73,9 +73,12 @@ void FFTEffect::tick() {
       targetValue[i] = value;
     }
 
-    if (_shallUseFineBands) {
-      applyValue(n - i, targetValue[i]);
-      applyValue(NUMPIXELS - (n - i), targetValue[i]);
+    if (_shallGoFromMiddle) {
+      applyValue(n - i - 1, targetValue[i]);
+      if (i == n - 1) {
+        applyValue(n, targetValue[i]);
+      }
+      applyValue(NUMPIXELS - (n - i - 1), targetValue[i]);
     } else {
       applyValue(i, targetValue[i]);
     }
