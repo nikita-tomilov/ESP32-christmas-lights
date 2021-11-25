@@ -143,24 +143,6 @@ void updateLights() {
 }
 
 void initFairyLights() {
-  //first color shall be white
-  assignedColors[0][0] = 255;
-  assignedColors[0][1] = 255;
-  assignedColors[0][2] = 255;
-  //second and third - red/green - christmas
-  assignedColors[1][0] = 255;
-  assignedColors[1][1] = 0;
-  assignedColors[1][2] = 0;
-  assignedColors[2][0] = 0;
-  assignedColors[2][1] = 255;
-  assignedColors[2][2] = 0;
-  //4th and 5th - yellow/blue
-  assignedColors[3][0] = 255;
-  assignedColors[3][1] = 128; //yes it has to be less green for yellow colour
-  assignedColors[3][2] = 0;
-  assignedColors[4][0] = 0;
-  assignedColors[4][1] = 0;
-  assignedColors[4][2] = 64;
   //all colors - zero
   for (int i = 0; i < NUMPIXELS; i++) {
     brightness[i] = 128;

@@ -43,6 +43,7 @@ char mDNSName[64] = {0};
 
 #include "autodiscovery.hpp"
 #include "fairy-lights.hpp"
+#include "preferences.hpp"
 
 void setup() {
   Serial.begin(115200);
@@ -256,51 +257,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
   return false;
 }
 
-void prefsPutInt(char* key, int value) {
-  //Serial.println("Write value " + String(key) + " : " + String(value));
-  char buf[64];
-  sprintf(buf, "/%s", key);
-  File f = SPIFFS.open(buf, "w");
-  if (!f) {
-    Serial.println("error opening file " + String(key));
-    return;
-  }
-  f.write((uint8_t*)(&value), sizeof(int));
-  f.close();
-}
-
-int prefsGetInt(char* key, int defaultValue) {
-  char buf[64];
-  sprintf(buf, "/%s", key);
-  File f = SPIFFS.open(buf, "r");
-  if (!f) {
-    //Serial.println("Read value " + String(key) + " answered default " + String(defaultValue));
-    return defaultValue;
-  }
-  int value;
-  int b = f.read((uint8_t*)(&value), sizeof(int));
-  if (b != sizeof(int)) {
-    f.close();
-    //Serial.println("Read value " + String(key) + " answered default " + String(defaultValue));
-    return defaultValue;
-  }
-  f.close();
-  //Serial.println("Read value " + String(key) + " answered " + String(value));
-  return value;
-}
-
-void prefsPutFloat(char* key, float value) {
-  prefsPutInt(key, value * 10000);
-}
-
-float prefsGetFloat(char* key, float defaultValue) {
-  int defVal = defaultValue * 10000;
-  int val = prefsGetInt(key, defVal);
-  return (float)(defVal) / 10000;
-}
-
-
-//TODO: color
 void restorePreferences() {
   assignedBrightness = prefsGetInt("brightness",  128);
   setBrightnessMode(prefsGetInt("brightnessMode",  0));
@@ -309,6 +265,11 @@ void restorePreferences() {
   fastAnimationDelay = prefsGetInt("fastAnimationDelay",  10);
   setInputGain(prefsGetFloat("inputGain",  1.0));
   setCutoff(prefsGetInt("cutoff",  800));
+  restoreColor(0, 255, 255, 255);
+  restoreColor(1, 255, 0, 0);
+  restoreColor(2, 0, 255, 0);
+  restoreColor(3, 255, 255, 0);
+  restoreColor(4, 0, 0, 255);
   Serial.println("settings restored");
 }
 
@@ -316,6 +277,27 @@ float cconstrain(float x, float a, float b) {
   if (x < a) return a;
   if (x > b) return b;
   return x;
+}
+
+void restoreColor(int idx, int dr, int dg, int db) {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  prefsGetColor(idx, &r, &g, &b, dr, dg, db);
+  assignedColors[idx][0] = r;
+  assignedColors[idx][1] = g;
+  assignedColors[idx][2] = b;
+}
+
+void setColor(int idx, String value) {
+  long long number = strtoll( value.c_str(), NULL, 16);
+  long long r = number >> 16;
+  long long g = number >> 8 & 0xFF;
+  long long b = number & 0xFF;
+  assignedColors[idx][0] = r;
+  assignedColors[idx][1] = g;
+  assignedColors[idx][2] = b;
+  prefsPutColor(idx, r, g, b);
 }
 
 //TODO: color
@@ -332,6 +314,10 @@ void acceptArg(String argName, String argValue) {
     int value = cconstrain(argValue.toInt(), COLOR_MODE_COUNT - 1);
     setColorMode(value);
     prefsPutInt("colorMode",  value);
+  } else if (argName.indexOf("color") >= 0) {
+    char num = argName[5];
+    int idx = num - '0';
+    setColor(idx, argValue);
   } else if (argName.compareTo("slowAnimationDelay") == 0) {
     int value = constrain(argValue.toInt(), 500, 5000);
     slowAnimationDelay = value;
