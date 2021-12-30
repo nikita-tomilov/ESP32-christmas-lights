@@ -1,9 +1,22 @@
+#define TTGO_T_DISPLAY
+//#define SHOW_GAIN
+
 #ifdef ESP32
-//for ESP32 I use WeMos LOLIN 32 with screen; leds are attached to pin 27
+//for ESP32 I use TTGO T-Display ESP32 that has 1.14" 240*135 IPS screen
+//WeMos LOLIN 32 with ssd1306 screen is also supported, just remove ttgo define
 
   #define LED_STRIP_PIN 27
+  #define ADC_PIN 33
+  #include <SPIFFS.h>
+  #include <FS.h>
+  #ifdef TTGO_T_DISPLAY
+    #define NUMPIXELS 100
+    #include "display-ttgo-ss7789v.hpp"
+  #else
+    #define NUMPIXELS 50
+    #include "display-i2c-ssd1306.hpp"
+  #endif
   #include "leds.hpp"
-  #include "display.hpp"
   #include <WiFi.h>
   #include <WiFiMulti.h>
   #include <ESPmDNS.h>
@@ -11,8 +24,6 @@
   WebServer server(80);
   WiFiMulti wifiMulti;
   #include <uri/UriBraces.h>
-  #include "SPIFFS.h"
-  #include "FS.h"
 
   TaskHandle_t ledTaskHandle;
   TaskHandle_t srvTaskHandle;
@@ -78,7 +89,7 @@ void setup() {
   setupServer();
   SPIFFS.begin();
 
-  fillString(3, "server ready");
+  fillString(3, "server ok, L" + String(NUMPIXELS));
   #ifdef ESP32
     initFFT();
   #endif
@@ -105,28 +116,39 @@ void audioLoopAction() {
   captureAudioData();
   analyzeAudioWithFFT();
 
-  audioCount++;
+  /*audioCount++;
   if (millis() - audioMs > 1000) {
     audioMs = millis();
-    //Serial.print("audio: ");
-    //Serial.println(audioCount);
+    Serial.print("audio: ");
+    Serial.println(audioCount);
     audioCount = 0;
-  }
+  }*/
 }
 #endif
 
 long ledMs = 0;
 long ledCount = 0;
+long gainMs = 0;
 void ledTaskAction() {
   updateLights();
   delay(1);
-  ledCount++;
-  if (millis() - ledMs > 1000) {
-    ledMs = millis();
-    //Serial.print("leds : ");
-    //Serial.println(ledCount);
+  long now = millis();
+  /*ledCount++;
+  if (now - ledMs > 1000) {
+    ledMs = now;
+    Serial.print("leds : ");
+    Serial.println(ledCount);
     ledCount = 0;
-  }
+  }*/
+  #ifdef ESP32
+    #ifdef SHOW_GAIN
+      if (now - gainMs > 250) {
+        //fillString(6, "Gain: " + String(GAIN));
+        Serial.println("Gain: " + String(GAIN));
+        gainMs = now;
+      }
+    #endif
+  #endif
 }
 
 long srvMs = 0;
@@ -141,6 +163,9 @@ void srvTaskAction() {
     //Serial.println(srvCount);
     srvCount = 0;
   }
+  #ifdef TTGO_T_DISPLAY
+    showLedsOnScreen();
+  #endif
   delay(1);
 }
 
@@ -302,7 +327,6 @@ void setColor(int idx, String value) {
   prefsPutColor(idx, r, g, b);
 }
 
-//TODO: color
 void acceptArg(String argName, String argValue) {
   if (argName.compareTo("brightness") == 0) {
     int value = cconstrain(argValue.toInt(), 255);

@@ -3,7 +3,6 @@
 
 #include <FastLED.h>
 
-#define NUMPIXELS 50
 CRGB leds[NUMPIXELS];
 
 void setPixelColor(int i, int r, int g, int b) {

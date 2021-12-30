@@ -70,7 +70,7 @@ void captureAudioData() {
   for (int i = 0; i < SAMPLES; i++) {
     prevSampleTakenAt = micros();
     //https://github.com/espressif/arduino-esp32/issues/102
-    vReal[i] = analogRead(33);
+    vReal[i] = analogRead(ADC_PIN);
     vImag[i] = 0;
     //while ((micros() - prevSampleTakenAt) < samplingPeriodUs) { /* do nothing to wait */ }
   }
