@@ -18,10 +18,10 @@ class FFTEffect : public IEffect {
     bool _shallAffectBrightness;
     bool _shallGoFromMiddle;
     void applyValue(int i, int targetValue);
+    int targetValue[NUMPIXELS];
+    int targetValueDecrement = 4;
 };
 
-int targetValue[NUMPIXELS];
-int targetValueDecrement = 4;
 void FFTEffect::init() {
   for (int i = 0; i < NUMPIXELS; i++) {
     targetValue[i] = 0;
@@ -35,6 +35,7 @@ long imap(long x, long in_min, long in_max, long out_min, long out_max) {
 }
 float redHue = 0.0;
 float greenHue = 120.0 / 360.0;
+float blueHue = 240.0 / 360.0;
 
 void FFTEffect::applyValue(int i, int targetValue) {
   if (_shallAffectBrightness) {

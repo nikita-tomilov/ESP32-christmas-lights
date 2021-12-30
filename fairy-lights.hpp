@@ -27,6 +27,7 @@ class IEffect {
 
 #ifdef ESP32
 #include "cobr-mode-fft.hpp"
+#include "cobr-mode-gain.hpp"
 #endif
 
 SingleColor singleColor;
@@ -48,15 +49,17 @@ RandomBrightnessBursts rndBrBursts;
   FFTEffect fftBrFine   (USE_FINE_BANDS,   AFFECT_BRIGHTNESS, GO_FROM_BEGINNING);
   FFTEffect fftBrCoarseS(USE_COARSE_BANDS, AFFECT_BRIGHTNESS, GO_FROM_MIDDLE);
   FFTEffect fftBrFineS  (USE_FINE_BANDS,   AFFECT_BRIGHTNESS, GO_FROM_MIDDLE);
+  GainEffect gainC  (AFFECT_COLOR);
+  GainEffect gainBr  (AFFECT_BRIGHTNESS);
   
-  #define COLOR_MODE_COUNT 11
+  #define COLOR_MODE_COUNT 12
   IEffect *const colorModes[COLOR_MODE_COUNT] = {
-    &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW, &fftCCoarse, &fftCFine, &fftCCoarseS, &fftCFineS
+    &singleColor, &twoColors, &fiveColors, &rainbow, &rainbowReversed, &rainbowCW, &rainbowCCW, &fftCCoarse, &fftCFine, &fftCCoarseS, &fftCFineS, &gainC
   };
   
-  #define BRIGHTNESS_MODE_COUNT 6
+  #define BRIGHTNESS_MODE_COUNT 7
   IEffect *const brightnessModes[COLOR_MODE_COUNT] = {
-    &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine, &fftBrCoarseS, &fftBrFineS
+    &singleBrightness, &rndBrBursts, &fftBrCoarse, &fftBrFine, &fftBrCoarseS, &fftBrFineS, &gainBr
   };
 
 #elif defined(ESP8266)
