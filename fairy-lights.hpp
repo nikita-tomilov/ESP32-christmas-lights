@@ -1,8 +1,10 @@
 #ifndef _FAIRY_LIGHTS_HPP
 #define _FAIRY_LIGHTS_HPP
 
+#ifndef TTGO_T_DISPLAY
 uint8_t brightness[NUMPIXELS];
 uint8_t colors[NUMPIXELS][3];
+#endif
 uint8_t assignedColors[5][3];
 uint8_t assignedBrightness = 128;
 
