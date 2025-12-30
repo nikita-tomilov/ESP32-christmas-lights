@@ -83,7 +83,7 @@ void tryUpdateAutodiscovery() {
   int nrOfServices = MDNS.queryService("http", "tcp");
    
   if (nrOfServices == 0) {
-    Serial.println("No services were found.");
+    Serial.println("No other services (ESPs) were found.");
   } else {
     for (int i = 0; i < nrOfServices; i=i+1) {
       addOrUpdateDevice(MDNS.IP(i).toString(), MDNS.hostname(i));

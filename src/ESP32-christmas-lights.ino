@@ -363,6 +363,7 @@ void acceptArg(String argName, String argValue) {
 #endif
   fillString(4, "CM: " + getColorModeName());
   fillString(5, "BR: " + getBrightnessModeName());
+  paramsChanged = true;
 }
 
 void sendStatus() {

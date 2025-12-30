@@ -10,6 +10,7 @@ uint8_t assignedBrightness = 128;
 
 long slowAnimationDelay = 1000;
 long fastAnimationDelay = 10;
+bool paramsChanged = true;
 
 class IEffect {
   public:
@@ -111,14 +112,18 @@ long brLastSlowTick = millis();
 long brLastFastTick = millis();
 
 void colorsActions() {
-  if (millis() - colorsLastSlowTick > slowAnimationDelay) {
+  if ((millis() - colorsLastSlowTick > slowAnimationDelay) || paramsChanged) {
     colorModes[colorMode]->slowAction();
     colorsLastSlowTick = millis();
   }
-  if (millis() - colorsLastFastTick > fastAnimationDelay) {
+  if ((millis() - colorsLastFastTick > fastAnimationDelay) || paramsChanged) {
     colorModes[colorMode]->fastAction();
     colorsLastFastTick = millis();
   }
+  if (slowAnimationDelay == 5000) {
+    colorsLastSlowTick = millis();
+  }
+  paramsChanged = false;
 }
 void bightnessActions() {
   if (millis() - brLastSlowTick > slowAnimationDelay) {
