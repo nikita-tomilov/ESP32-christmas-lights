@@ -6,7 +6,6 @@
 //thank you, G6EJD!
 
 #include "arduinoFFT.h"
-arduinoFFT FFT = arduinoFFT();
 
 #define SAMPLES 256              // Must be a power of 2
 #define N ((SAMPLES / 2))
@@ -24,6 +23,7 @@ int GAIN = MIN_POSSIBLE_GAIN;  // the gain that is used for vizualizing (e.g. ab
 
 double vReal[SAMPLES];
 double vImag[SAMPLES];
+ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, SAMPLES, SAMPLING_FREQUENCY);
 
 
 byte bandIndex[SAMPLES / 2];
@@ -102,9 +102,9 @@ void analyzeAudioWithFFT() {
 }
 
 void computeFFT() {
-  FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
-  FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
+  FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  FFT.compute(vReal, vImag, SAMPLES, FFT_FORWARD);
+  FFT.complexToMagnitude(vReal, vImag, SAMPLES);
 }
 
 void prepareFFTResults() {
