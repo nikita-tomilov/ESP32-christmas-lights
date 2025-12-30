@@ -1,17 +1,6 @@
 #ifndef _DISPLAY_HPP
 #define _DISPLAY_HPP
 
-/*
-Remember: if using TTGO T-Display, do the following:
-1) Download TFT_eSPI lib using Arduino IDE
-2) Open in external editor (e.g. vi) file <arduino path>/libraries/TFT_eSPI/User_Setup_Select.h
-3) Comment out line #include <User_Setup.h>
-4) Uncomment line #include <User_Setups/Setup25_TTGO_T_Display.h>
-Thus, the lib will automagically work correctly with T-Display's built-in screen.
-
-If using any other TFT screen via this library, correct the <User_Setup.h> file accordingly by yourself.
- */
-
 #include <TFT_eSPI.h>
 #include <SPI.h>
 

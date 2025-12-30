@@ -1,6 +1,3 @@
-#define TTGO_T_DISPLAY
-//#define SHOW_GAIN
-
 #ifdef ESP32
 //for ESP32 I use TTGO T-Display ESP32 that has 1.14" 240*135 IPS screen
 //WeMos LOLIN 32 with ssd1306 screen is also supported, just remove ttgo define
